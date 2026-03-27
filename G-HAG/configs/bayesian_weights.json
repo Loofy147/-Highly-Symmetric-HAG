@@ -1,0 +1,45 @@
+{
+  "HAG_Build": {
+    "version": "4.0.1-SOVEREIGN-DESKTOP",
+    "phase": "Desktop Sovereignty (Build 4.0)",
+    "maturity_stage": "Stage 5: Optimized",
+    "task_accuracy": 0.96,
+    "aime_accuracy": 1.0,
+    "error_amplification": 4.4,
+    "hallucination_reduction": 0.427,
+    "ram_saving": 0.42,
+    "snapshot_compression": 50.0
+  },
+  "KF_NG": {
+    "lambda_reg": 0.1,
+    "q_threshold": 0.984,
+    "learning_rate": 0.01,
+    "fisher_epsilon": 1e-6
+  },
+  "VHSE": {
+    "dimension": 8192,
+    "fidelity_threshold": 0.98,
+    "burr_mode": "ACTIVE"
+  },
+  "DCE": {
+    "entanglement_wedge_threshold": 0.98,
+    "max_sync_latency_ms": 1.0,
+    "entangled_nodes": 180
+  },
+  "TRT": {
+    "max_iterations": 25,
+    "thinking_depth": 5
+  },
+  "Ribbon": {
+    "capacity": 1000000,
+    "fpr": 0.01
+  },
+  "Q_Score_Weights": {
+    "Grounding": 0.18,
+    "Certainty": 0.22,
+    "Structure": 0.20,
+    "Applicability": 0.18,
+    "Coherence": 0.12,
+    "Generativity": 0.10
+  }
+}
