@@ -27,7 +27,7 @@ class Engine:
         """Initializes the discovery engine."""
         pass
 
-    def run(self, m: int, k: int, strategy: str = "standard") -> Dict[str, Any]:
+    def run(self, m: int, k: int, strategy: str = "standard", domain: str = None) -> Dict[str, Any]:
         """
         Runs the classification and optional search for a problem (m, k).
 
@@ -35,12 +35,18 @@ class Engine:
             m: The group order (Z_m).
             k: The dimension (number of cycles).
             strategy: Search strategy ('standard', 'hybrid', 'equivariant').
+            domain: Optional domain string to use advanced classification.
 
         Returns:
             A dictionary containing the status, proof steps, and solution if found.
         """
         t0 = time.perf_counter()
-        proof_obj = get_algebraic_proof(m, k)
+
+        if domain:
+            from .algebraic import analyze_advanced_domain
+            proof_obj = analyze_advanced_domain(domain)
+        else:
+            proof_obj = get_algebraic_proof(m, k)
 
         solution = None
         if proof_obj['exists'] == "PROVED_POSSIBLE":
@@ -74,7 +80,7 @@ class Engine:
             strategy: Search strategy to use.
         """
         d = parse_domain(desc)
-        res = self.run(d['m'], d['k'], strategy=strategy)
+        res = self.run(d['m'], d['k'], strategy=strategy, domain=desc)
         res['parsed'] = d
         return res
 
