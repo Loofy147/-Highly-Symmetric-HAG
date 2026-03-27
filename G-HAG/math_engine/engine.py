@@ -1,3 +1,4 @@
+from src.indexing.ribbon import RibbonIndexer
 import time, sys
 from typing import Dict, List, Optional, Tuple, Any, Callable
 from .core import extract_weights, verify_sigma, PRECOMPUTED, solve, run_hybrid_sa
@@ -25,7 +26,9 @@ class Engine:
     def __init__(self):
         self.registry = []
         """Initializes the discovery engine."""
-        pass
+        self.ribbon = RibbonIndexer(num_keys=100)
+        self.ribbon.add_batch(["heisenberg", "crystal", "s3", "icosahedral"],
+                             ["HEIS-1", "9.1", "S3-1", "6.1"])
 
     def run(self, m: int, k: int, strategy: str = "standard", domain: str = None) -> Dict[str, Any]:
         """
@@ -40,11 +43,17 @@ class Engine:
         Returns:
             A dictionary containing the status, proof steps, and solution if found.
         """
+
+
         t0 = time.perf_counter()
+
+        # O(1) Ribbon Dispatch
+        thm_id = self.ribbon.query(domain) if domain else None
 
         if domain:
             from .algebraic import analyze_advanced_domain
             proof_obj = analyze_advanced_domain(domain)
+            if thm_id: proof_obj["theorem_id"] = thm_id
         else:
             proof_obj = get_algebraic_proof(m, k)
 

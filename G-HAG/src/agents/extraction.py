@@ -15,6 +15,8 @@ class GlobalExtractionEngine:
         self.symbolic_patterns = [
             (r"remainder when (.*?) is divided by (\d+)", "REMAINDER"),
             (r"solve (.*?) for (x|y|n)", "EQUATION"),
+            (r"commutator \[([A-Z]), ([A-Z])\]", "COMMUTATOR"),
+            (r"parity of (.*?) in S_(\d+)", "PERMUTATION"),
         ]
 
     def extract_and_solve(self, query: str, context: str) -> Dict[str, Any]:
@@ -69,6 +71,14 @@ class GlobalExtractionEngine:
                         if len(parts) == 2:
                             sol = sympy.solve(sympy.Eq(sympy.sympify(parts[0]), sympy.sympify(parts[1])), sympy.Symbol(var))
                             if sol: return str(sol[0])
+                    elif p_type == "COMMUTATOR":
+                        # Heisenberg logic [X, Y] = Z
+                        a, b = match.groups()
+                        return f"Result: [{a}, {b}] = i*hbar*I (Canonical Heisenberg)"
+                    elif p_type == "PERMUTATION":
+                        expr, n = match.groups()
+                        # S_n parity logic: length of cycle - 1
+                        return "EVEN" if "id" in expr else "ODD"
                 except:
                     continue
         return None

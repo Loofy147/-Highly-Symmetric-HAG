@@ -622,10 +622,15 @@ def construct_spike_sigma(m: int, k: int = 3) -> Dict[Tuple, Tuple]:
     return sigma
 
 def solve(m: int, k: int=3, seed: int=42) -> Optional[Dict]:
-    """Mock solver for fast tests."""
+    """
+    Unified solver. Returns sigma or None.
+    Routes: precomputed → geometric-construction → Hybrid SA.
+    """
+    # 1. Precomputed
     if (m,k) in PRECOMPUTED: return PRECOMPUTED[(m,k)]
-    if k == 3 and m % 2 == 1: return construct_spike_sigma(m, k)
-    return {(0,0,0): (0,1,2)}
+
+    w = extract_weights(m, k)
+    if w.h2_blocks: return None
 
     # 2. Geometric construction (odd m, k=3)
     if k == 3 and m % 2 == 1:

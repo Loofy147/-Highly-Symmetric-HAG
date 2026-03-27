@@ -19,6 +19,15 @@ class GHAGSovereignAgent(NativelyRecursiveAgent):
         self.orchestrator = ResilientHAGModel(input_dim=8192)
         self.vhse = self.dce_node.shared_bulk
 
+    def _get_problem_vector(self, text: str) -> torch.Tensor:
+        """Generates a deterministic holographic key from problem text."""
+        import hashlib
+        h = hashlib.sha256(text.encode()).digest()
+        seed = int.from_bytes(h, 'big') % (2**32)
+        g = torch.Generator(device=self.device)
+        g.manual_seed(seed)
+        return torch.sign(torch.randn(self.vhse.dim, generator=g, device=self.device))
+
     def solve_math_with_governance(self, problem_desc: str, super_context: str = ""):
         """
         G-HAG Executive Loop Build 4.0:
@@ -31,13 +40,24 @@ class GHAGSovereignAgent(NativelyRecursiveAgent):
         print(f"G-HAG Build 4.0: Processing complex mathematical task...")
 
         # 1. Holographic Witness Retrieval
-        query_vec = torch.sign(torch.randn(self.vhse.dim))
+        query_vec = self._get_problem_vector(problem_desc)
         witness = self.vhse.retrieve(query_vec)
         has_cached_witness = torch.norm(witness) > 0.1 # Simplified check
 
-        # 2. Symmetry/Domain Analysis & Discrete Governance
+        # 2. Symmetry/Domain Analysis & Active Inference Surprise
         domain_analysis = self.math_engine.analyse_text(problem_desc)
         discrete_obstruction = domain_analysis["status"] == "PROVED_IMPOSSIBLE"
+
+        # Calculate surprise (Free Energy) based on domain status
+        state = torch.randn(1, self.vhse.dim).to(self.device)
+        action = torch.zeros(1, 10).to(self.device)
+        # If impossible, next state is high entropy (surprise)
+        next_state = state if not discrete_obstruction else torch.randn(1, self.vhse.dim).to(self.device)
+        surprise = self.active_inference.calculate_surprise(state, action, next_state)
+
+        if surprise > 0.5:
+            print(f"HAG-4.0: High Surprise ({surprise:.4f}) detected. Elevating reasoning depth...")
+            self.extraction_engine.rlm.depth_limit = 2
 
         # 3. Hybrid Extraction & Solving
         extraction_res = self.extraction_engine.extract_and_solve(problem_desc, super_context)
