@@ -276,22 +276,27 @@ def _build_sa(m: int, k: int=3):
     pa = [[None]*k for _ in range(len(all_p))]
     for pi,p in enumerate(all_p):
         for at,c in enumerate(p): pa[pi][c] = at
-    return n, arc_s, pa, all_p
+    # Bolt Optimized: Pre-calculated transition table for O(1) score computation
+    # trans[c][pi][u] is the target node for node u with permutation pi and color c
+    trans = [[[arc_s[u][pa[pi][c]] for u in range(n)] for pi in range(len(all_p))] for c in range(k)]
+    return n, trans, all_p
 
 def _build_sa3(m: int):
-    n, arc_s, pa, _ = _build_sa(m, 3)
-    return n, arc_s, pa
+    n, trans, _ = _build_sa(m, 3)
+    return n, trans
 
-def _sa_score(sigma: List[int], arc_s, pa, n: int, k: int=3) -> int:
+def _sa_score(sigma: List[int], trans, n: int, k: int=3) -> int:
+    """Bolt Optimized: O(1) transition lookup via pre-calculated table."""
     total_score = 0
     for c in range(k):
+        lookup = trans[c]
         vis = bytearray(n); comps = 0
         for s in range(n):
             if not vis[s]:
                 comps += 1; cur = s
                 while not vis[cur]:
-                    vis[cur] = 1; pi = sigma[cur]
-                    cur = arc_s[cur][pa[pi][c]]
+                    vis[cur] = 1
+                    cur = lookup[sigma[cur]][cur]
         total_score += comps - 1
     return total_score
 
@@ -325,12 +330,12 @@ def run_hybrid_sa(m: int, k: int=3, seed: int=0, max_iter: int=10_000_000,
     Includes Basin Escape v3.1 logic with Basin-Burst.
     """
     import math, time
-    n, arc_s, pa, all_p = _build_sa(m, k)
+    n, trans, all_p = _build_sa(m, k)
     nP = len(all_p)
     gens = [tuple([m//2]*k)] if m%2==0 else [tuple([1]*k)]
     orbits = get_node_orbits(m, gens)
     rng = random.Random(seed); sigma = [rng.randrange(nP) for _ in range(n)]
-    cs = _sa_score(sigma, arc_s, pa, n, k); bs = cs; best = sigma[:]
+    cs = _sa_score(sigma, trans, n, k); bs = cs; best = sigma[:]
     T = 2.0; cool = (0.003/2.0)**(1.0/max_iter) if max_iter > 0 else 0.999998
     t0 = time.perf_counter(); stall = 0; reheats = 0; report_n = 100_000
     for it in range(max_iter):
@@ -342,7 +347,7 @@ def run_hybrid_sa(m: int, k: int=3, seed: int=0, max_iter: int=10_000_000,
                 old = sigma[v]
                 for pi in rng.sample(range(nP), nP):
                     if pi == old: continue
-                    sigma[v] = pi; ns = _sa_score(sigma, arc_s, pa, n, k)
+                    sigma[v] = pi; ns = _sa_score(sigma, trans, n, k)
                     if ns < cs:
                         cs = ns; fixed = True
                         if cs < bs: bs = cs; best = sigma[:]
@@ -355,7 +360,7 @@ def run_hybrid_sa(m: int, k: int=3, seed: int=0, max_iter: int=10_000_000,
                     for pi in rng.sample(range(nP), nP):
                         if all(sigma[v] == pi for v in orbit): continue
                         for v in orbit: sigma[v] = pi
-                        ns = _sa_score(sigma, arc_s, pa, n, k)
+                        ns = _sa_score(sigma, trans, n, k)
                         if ns < cs:
                             cs = ns; fixed = True
                             if cs < bs: bs = cs; best = sigma[:]
@@ -373,7 +378,7 @@ def run_hybrid_sa(m: int, k: int=3, seed: int=0, max_iter: int=10_000_000,
                         for _ in range(20):
                             pi1, pi2 = rng.randrange(nP), rng.randrange(nP)
                             sigma[v1], sigma[v2] = pi1, pi2
-                            ns = _sa_score(sigma, arc_s, pa, n, k)
+                            ns = _sa_score(sigma, trans, n, k)
                             if ns < cs:
                                 cs = ns; fixed = True
                                 if cs < bs: bs = cs; best = sigma[:]
@@ -387,7 +392,7 @@ def run_hybrid_sa(m: int, k: int=3, seed: int=0, max_iter: int=10_000_000,
                     v1, v2, v3 = rng.sample(range(n), 3)
                     old1, old2, old3 = sigma[v1], sigma[v2], sigma[v3]
                     sigma[v1], sigma[v2], sigma[v3] = rng.randrange(nP), rng.randrange(nP), rng.randrange(nP)
-                    ns = _sa_score(sigma, arc_s, pa, n, k)
+                    ns = _sa_score(sigma, trans, n, k)
                     if ns < cs:
                         cs = ns; fixed = True
                         if cs < bs: bs = cs; best = sigma[:]
@@ -397,13 +402,13 @@ def run_hybrid_sa(m: int, k: int=3, seed: int=0, max_iter: int=10_000_000,
                 reheats += 1; stall = 0; sigma = best[:]; cs = bs; T = 1.0
                 for _ in range(max(1, int(n * 0.05))):
                     vk = rng.randrange(n); sigma[vk] = rng.randrange(nP)
-                cs = _sa_score(sigma, arc_s, pa, n, k)
+                cs = _sa_score(sigma, trans, n, k)
             continue
         if rng.random() < 0.3:
             orbit = rng.choice(orbits); new_p = rng.randrange(nP)
             old_vals = [sigma[v] for v in orbit]
             for v in orbit: sigma[v] = new_p
-            ns = _sa_score(sigma, arc_s, pa, n, k); d = ns - cs
+            ns = _sa_score(sigma, trans, n, k); d = ns - cs
             if d <= 0 or rng.random() < math.exp(-d / T):
                 cs = ns
                 if cs < bs: bs = cs; best = sigma[:]; stall = 0
@@ -413,7 +418,7 @@ def run_hybrid_sa(m: int, k: int=3, seed: int=0, max_iter: int=10_000_000,
                 stall += 1
         else:
             v = rng.randrange(n); old = sigma[v]; sigma[v] = rng.randrange(nP)
-            ns = _sa_score(sigma, arc_s, pa, n, k); d = ns - cs
+            ns = _sa_score(sigma, trans, n, k); d = ns - cs
             if d <= 0 or rng.random() < math.exp(-d / T):
                 cs = ns
                 if cs < bs: bs = cs; best = sigma[:]; stall = 0
@@ -424,7 +429,7 @@ def run_hybrid_sa(m: int, k: int=3, seed: int=0, max_iter: int=10_000_000,
             reheats += 1; stall = 0; sigma = best[:]; cs = bs; T = 2.0 / (1.2**reheats)
             for _ in range(max(1, int(n * (0.05 if cs > 20 else 0.02)))):
                 vk = rng.randrange(n); sigma[vk] = rng.randrange(nP)
-            cs = _sa_score(sigma, arc_s, pa, n, k); continue
+            cs = _sa_score(sigma, trans, n, k); continue
         T *= cool
         if verbose and (it+1) % report_n == 0:
             print(f"    it={it+1:>8,} T={T:.5f} s={cs} best={bs} reh={reheats} {time.perf_counter()-t0:.1f}s")
@@ -447,7 +452,7 @@ def run_fiber_structured_sa(m: int, k: int, seed: int=0, max_iter: int=10_000_00
     Includes Basin Escape v3.1 logic for frontier breakages.
     """
     import math, time
-    n, arc_s, pa, all_p = _build_sa(m, k); nP = len(all_p)
+    n, trans, all_p = _build_sa(m, k); nP = len(all_p)
     def get_coords(idx):
         coords = []; val = idx
         for _ in range(k): coords.append(val % m); val //= m
@@ -463,7 +468,7 @@ def run_fiber_structured_sa(m: int, k: int, seed: int=0, max_iter: int=10_000_00
         sig = [0]*n
         for v in range(n): sig[v] = t[node_to_key[v]]
         return sig
-    sigma = make_sigma(tab); cs = _sa_score(sigma, arc_s, pa, n, k)
+    sigma = make_sigma(tab); cs = _sa_score(sigma, trans, n, k)
     bs = cs; bt = tab.copy(); t0 = time.perf_counter(); stall = 0
     T = 2.0; cool = (0.003/2.0)**(1.0/max_iter) if max_iter > 0 else 0.999998
     for it in range(max_iter):
@@ -477,7 +482,7 @@ def run_fiber_structured_sa(m: int, k: int, seed: int=0, max_iter: int=10_000_00
                 for pi in rng.sample(range(nP), nP):
                     if pi == old: continue
                     tab[rk] = pi; sig = make_sigma(tab)
-                    ns = _sa_score(sig, arc_s, pa, n, k)
+                    ns = _sa_score(sig, trans, n, k)
                     if ns < cs:
                         cs = ns; fixed = True
                         if cs < bs: bs = cs; bt = tab.copy()
@@ -496,7 +501,7 @@ def run_fiber_structured_sa(m: int, k: int, seed: int=0, max_iter: int=10_000_00
                         pi1, pi2 = rng.randrange(nP), rng.randrange(nP)
                         tab[k1], tab[k2] = pi1, pi2
                         sig = make_sigma(tab)
-                        ns = _sa_score(sig, arc_s, pa, n, k)
+                        ns = _sa_score(sig, trans, n, k)
                         if ns < cs:
                             cs = ns; fixed = True
                             if cs < bs: bs = cs; bt = tab.copy()
@@ -509,7 +514,7 @@ def run_fiber_structured_sa(m: int, k: int, seed: int=0, max_iter: int=10_000_00
                     k1, k2, k3 = rng.sample(keys, 3)
                     old1, old2, old3 = tab[k1], tab[k2], tab[k3]
                     tab[k1], tab[k2], tab[k3] = rng.randrange(nP), rng.randrange(nP), rng.randrange(nP)
-                    sig = make_sigma(tab); ns = _sa_score(sig, arc_s, pa, n, k)
+                    sig = make_sigma(tab); ns = _sa_score(sig, trans, n, k)
                     if ns < cs:
                         cs = ns; fixed = True
                         if cs < bs: bs = cs; bt = tab.copy()
@@ -518,11 +523,11 @@ def run_fiber_structured_sa(m: int, k: int, seed: int=0, max_iter: int=10_000_00
             if not fixed:
                 tab = bt.copy()
                 for _ in range(max(1, int(len(keys)*0.08))): tab[rng.choice(keys)] = rng.randrange(nP)
-                sig = make_sigma(tab); cs = _sa_score(sig, arc_s, pa, n, k)
+                sig = make_sigma(tab); cs = _sa_score(sig, trans, n, k)
             continue
         rk = rng.choice(keys); old = tab[rk]; tab[rk] = rng.randrange(nP)
         if tab[rk] == old: continue
-        sig = make_sigma(tab); ns = _sa_score(sig, arc_s, pa, n, k); d = ns - cs
+        sig = make_sigma(tab); ns = _sa_score(sig, trans, n, k); d = ns - cs
         if d <= 0 or rng.random() < math.exp(-d / T):
             cs = ns
             if cs < bs: bs = cs; bt = tab.copy(); stall = 0
@@ -531,7 +536,7 @@ def run_fiber_structured_sa(m: int, k: int, seed: int=0, max_iter: int=10_000_00
         if stall > 100_000:
             stall = 0; tab = bt.copy(); cs = bs
             for _ in range(max(1, int(len(keys)*0.05))): tab[rng.choice(keys)] = rng.randrange(nP)
-            sig = make_sigma(tab); cs = _sa_score(sig, arc_s, pa, n, k); continue
+            sig = make_sigma(tab); cs = _sa_score(sig, trans, n, k); continue
         T *= cool
         if verbose and (it+1) % 100_000 == 0:
             print(f"    FiberSA it={it+1:>8,} T={T:.5f} s={cs} best={bs} {time.perf_counter()-t0:.1f}s")
@@ -580,37 +585,26 @@ def get_canonical_spike_params(m: int, k: int = 3) -> Dict[str, List[int]]:
 
 
 def construct_spike_sigma(m: int, k: int = 3) -> Dict[Tuple, Tuple]:
-    """
-    Directly construct a valid 3-Hamiltonian decomposition for any odd m.
-    Uses the discovered O(m) deterministic pattern:
-    - Step s=0: color 0 shifts j.
-    - Steps s=1..m-2: color 1 shifts j.
-    - Step s=m-1: color 2 shifts j.
-    - An i-shift is applied to one of the other colors based on (s, j).
-    """
-    if m % 2 == 0 or m < 3: return None
-    if k != 3: return None
+    """Bolt Optimized: Closed-form O(m) construction for all odd m (Canonical Spike)."""
+    if m % 2 == 0 or m < 3 or k != 3: return None
 
-    C = [0] + [1] * (m - 2) + [2]
-    D = []
-    for s in range(m):
-        others = [c for c in range(3) if c != C[s]]
-        D.append(others)
+    identity = (0, 1, 2)
+    swap12 = (0, 2, 1)
+    swap01 = (1, 0, 2)
+    def swap02(p): return (p[2], p[1], p[0])
 
-    # Pre-calculate table
+    # Pre-calculate levels
+    # P[s] = identity for s < m-2, P[m-2] = swap12, P[m-1] = swap01
+    P = [identity] * (m - 2) + [swap12, swap01]
+
     table = []
     for s in range(m):
         lv = {}
         for j in range(m):
-            # i-shift applied if s >= m-2 and j == m-1
-            val = 1 if (s >= m - 2 and j == m - 1) else 0
-            p = [None] * 3
-            p[1] = C[s]
-            if val == 1:
-                p[0] = D[s][0]; p[2] = D[s][1]
+            if j == 0 and s != m - 2:
+                lv[j] = swap02(P[s])
             else:
-                p[0] = D[s][1]; p[2] = D[s][0]
-            lv[j] = tuple(p)
+                lv[j] = P[s]
         table.append(lv)
 
     sigma = {}
