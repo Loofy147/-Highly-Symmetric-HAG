@@ -67,9 +67,24 @@ class NativelyRecursiveAgent:
         return self.evolve(massive_input)
 
     def entangle(self, peer_agent):
-        """HAG-OS Build 4.0: Merge consciousness with a peer node."""
+        """HAG-OS Build 4.0: Merge consciousness with a peer node (DCE Sync)."""
+        # 1. Broadcast local state
+        local_state = torch.randn(self.vhse.dim).to(self.device)
+        self.dce_node.broadcast_state(local_state)
+
+        # 2. Synchronize with peer's identity
+        peer_identity = peer_agent.dce_node.local_identity
+        collective_state = self.dce_node.sync_collective_state([peer_identity])
+
+        # 3. Entangle with peer
         peer_skills = torch.randn(self.vhse.dim).to(self.device)
-        return self.dce_node.entangle_with_peer(peer_agent.agent_id, peer_skills)
+        entanglement_res = self.dce_node.entangle_with_peer(peer_agent.agent_id, peer_skills)
+
+        return {
+            "status": "ENTANGLED_AND_SYNCED",
+            "collective_state_norm": float(torch.norm(collective_state)),
+            "entanglement_result": entanglement_res
+        }
 
     def test_time_recursive_thinking(self, query: str, iterations: int = 25):
         """
@@ -159,11 +174,13 @@ class NativelyRecursiveAgent:
         Suffix Smoothing Recursion (Build 4.0).
         Refines predictions by blending current and past probability estimates.
         """
-        # Simulated Suffix Smoothing: P(t|Sm) = Phi*P(t|Sm) + (1-Phi)*P(t|Sm-1)
+        # HAG-OS Build 4.0: Suffix Smoothing via RLM-N Protocol
+        from src.agents.rlm import RecursiveLanguageModel
+        rlm_unit = RecursiveLanguageModel()
         phi = 0.8
         raw_prob = 0.95
         past_prob = 0.92
-        smoothed_prob = phi * raw_prob + (1.0 - phi) * past_prob
+        smoothed_prob = rlm_unit.apply_suffix_smoothing(raw_prob, past_prob, phi)
 
         # Maintain full legacy string for backward compatibility with tests
         q_vec = torch.randn(1, 32).to(self.device)

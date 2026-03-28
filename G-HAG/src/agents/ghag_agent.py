@@ -59,6 +59,14 @@ class GHAGSovereignAgent(NativelyRecursiveAgent):
             print(f"HAG-4.0: High Surprise ({surprise:.4f}) detected. Elevating reasoning depth...")
             self.extraction_engine.rlm.depth_limit = 2
 
+        # 2.5 Multi-agent DCE Synchronization
+        # Synchronize collective state from discovered peers before extraction
+        collective_state = self.dce_node.sync_collective_state()
+        if torch.norm(collective_state) > 0.1:
+            print(f"HAG-4.0: Integrating collective consciousness (norm: {torch.norm(collective_state):.4f}).")
+            # Apply collective state to extraction context (simplified)
+            super_context += f" [Collective State Active: {torch.norm(collective_state):.4f}]"
+
         # 3. Hybrid Extraction & Solving
         extraction_res = self.extraction_engine.extract_and_solve(problem_desc, super_context)
 
