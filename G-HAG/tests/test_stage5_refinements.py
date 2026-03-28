@@ -12,12 +12,13 @@ class TestStage5Refinements(unittest.TestCase):
         raw_prob = 0.95
         past_prob = 0.92
 
-        # At depth 0, effective phi = 0.8
+        # At depth 0, effective phi = 0.8. No history yet.
         smoothed_d0 = rlm.apply_suffix_smoothing(raw_prob, past_prob, depth=0, phi=phi)
         expected_d0 = 0.8 * raw_prob + 0.2 * past_prob
         self.assertAlmostEqual(smoothed_d0, expected_d0)
 
-        # At depth 1, effective phi = 0.8 * 0.9 = 0.72
+        # Reset history for isolated depth 1 test
+        rlm.reasoning_history = []
         smoothed_d1 = rlm.apply_suffix_smoothing(raw_prob, past_prob, depth=1, phi=phi)
         expected_d1 = 0.72 * raw_prob + 0.28 * past_prob
         self.assertAlmostEqual(smoothed_d1, expected_d1)
