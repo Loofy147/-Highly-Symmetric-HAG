@@ -224,12 +224,41 @@ def _level_valid(lv: Dict[int,list], m: int) -> bool:
 
 @lru_cache(maxsize=16)
 def valid_levels(m: int) -> List[Dict]:
-    """All valid level assignments for G_m. Cached."""
-    result = []
-    for combo in iprod(_ALL_P3, repeat=m):
-        lv = {j: combo[j] for j in range(m)}
-        if _level_valid(lv, m): result.append(lv)
-    return result
+    """Bolt Optimized: Recursive search with early pruning based on Z_m cycle logic."""
+    results = []
+    _all_p = _ALL_P3
+    _shifts = _FIBER_SHIFTS
+
+    def search(j, current_lv):
+        if j == m:
+            if _level_valid(current_lv, m):
+                results.append(current_lv.copy())
+            return
+
+        for p in _all_p:
+            current_lv[j] = p
+            # Check if this assignment is still potentially valid
+            # (Partial check: in each color, j-targets must be distinct)
+            if j > 0:
+                is_partial_ok = True
+                for c in range(3):
+                    at = p.index(c)
+                    dj = _shifts[at][1]
+                    target_j = (j + dj) % m
+                    # Check against previous j-targets for same color
+                    for prev_j in range(j):
+                        prev_p = current_lv[prev_j]
+                        prev_at = prev_p.index(c)
+                        prev_dj = _shifts[prev_at][1]
+                        if (prev_j + prev_dj) % m == target_j:
+                            is_partial_ok = False; break
+                    if not is_partial_ok: break
+                if not is_partial_ok: continue
+
+            search(j + 1, current_lv)
+
+    search(0, {})
+    return results
 
 def compose_Q(table: List[Dict], m: int) -> List[Dict]:
     """Compute the three composed fiber permutations Q_0, Q_1, Q_2."""
@@ -523,7 +552,7 @@ def run_fiber_structured_sa(m: int, k: int, seed: int=0, max_iter: int=10_000_00
             if not fixed:
                 tab = bt.copy()
                 for _ in range(max(1, int(len(keys)*0.08))): tab[rng.choice(keys)] = rng.randrange(nP)
-                sig = make_sigma(tab); cs = _sa_score(sig, trans, n, k)
+                sig = make_sigma(tab); cs = _sa_score(sig, arc_s, pa, n, k)
             continue
         rk = rng.choice(keys); old = tab[rk]; tab[rk] = rng.randrange(nP)
         if tab[rk] == old: continue
@@ -536,7 +565,7 @@ def run_fiber_structured_sa(m: int, k: int, seed: int=0, max_iter: int=10_000_00
         if stall > 100_000:
             stall = 0; tab = bt.copy(); cs = bs
             for _ in range(max(1, int(len(keys)*0.05))): tab[rng.choice(keys)] = rng.randrange(nP)
-            sig = make_sigma(tab); cs = _sa_score(sig, trans, n, k); continue
+            sig = make_sigma(tab); cs = _sa_score(sig, arc_s, pa, n, k); continue
         T *= cool
         if verbose and (it+1) % 100_000 == 0:
             print(f"    FiberSA it={it+1:>8,} T={T:.5f} s={cs} best={bs} {time.perf_counter()-t0:.1f}s")
@@ -593,8 +622,6 @@ def construct_spike_sigma(m: int, k: int = 3) -> Dict[Tuple, Tuple]:
     swap01 = (1, 0, 2)
     def swap02(p): return (p[2], p[1], p[0])
 
-    # Pre-calculate levels
-    # P[s] = identity for s < m-2, P[m-2] = swap12, P[m-1] = swap01
     P = [identity] * (m - 2) + [swap12, swap01]
 
     table = []

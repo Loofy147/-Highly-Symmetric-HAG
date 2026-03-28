@@ -1,4 +1,7 @@
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 class SpacetimeEngine:
     """HAG-OS Build 4.0: Metric Spacetime Engine."""

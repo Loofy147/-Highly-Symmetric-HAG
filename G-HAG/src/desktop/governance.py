@@ -1,5 +1,13 @@
-import torch
-import torch.nn as nn
+try:
+    import torch
+except ImportError:
+    torch = None
+    nn = None
+try:
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
 from typing import Dict, Any, List, Optional
 from src.core.values import SystemValues
 

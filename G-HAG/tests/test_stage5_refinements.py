@@ -1,5 +1,8 @@
 import unittest
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
 from src.agents.rlm import RecursiveLanguageModel
 from src.indexing.ribbon import RibbonIndexer
 from src.agents.distributed_sync import DistributedAgentNode

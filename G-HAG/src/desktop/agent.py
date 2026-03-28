@@ -1,5 +1,12 @@
-import torch
-import numpy as np
+try:
+    import torch
+except ImportError:
+    torch = None
+    nn = None
+try:
+    import numpy as np
+except ImportError:
+    np = None
 from typing import Dict, Any, List, Optional
 from src.agents.native_recursive import NativelyRecursiveAgent
 from src.desktop.governance import LayeredGovernance

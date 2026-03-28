@@ -1,6 +1,13 @@
-import torch
-import torch.nn as nn
-import numpy as np
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
+try:
+    import numpy as np
+except ImportError:
+    np = None
 from typing import Dict, Any, List, Optional
 from src.agents.diffusion_reasoning import RecursiveDiffusionReasoning
 from src.agents.active_inference import FreeEnergyMinimizer
@@ -10,7 +17,7 @@ from src.governor.thinking_governor import ThinkingGovernor, TemporalCoherenceTr
 from src.indexing.holographic_memory import VolumetricHolographicMemory
 from src.core.values import SystemValues
 
-class RLMOrchestrator(nn.Module):
+class RLMOrchestrator(nn.Module if nn else object):
     def __init__(self, input_dim=128):
         super().__init__()
         self.net = nn.Linear(input_dim, 10)
@@ -35,7 +42,7 @@ class NativelyRecursiveAgent:
     """
     def __init__(self,
                  agent_id: str = "HAG-Sovereign-01",
-                 base_model: Optional[nn.Module] = None,
+                 base_model: Optional[nn.Module if nn else object] = None,
                  kfng_governor: Optional[KFNGGovernor] = None,
                  state_dim: int = 8192):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

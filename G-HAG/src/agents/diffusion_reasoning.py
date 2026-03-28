@@ -1,8 +1,12 @@
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
 from typing import List, Dict, Any
 
-class DiffusionStep(nn.Module):
+class DiffusionStep(nn.Module if nn else object):
     def __init__(self, state_dim, hidden_dim=64):
         super().__init__()
         self.refiner = nn.Sequential(
@@ -14,7 +18,7 @@ class DiffusionStep(nn.Module):
     def forward(self, x, noise_level):
         return x + self.refiner(x) * (1.0 - noise_level)
 
-class RecursiveDiffusionReasoning(nn.Module):
+class RecursiveDiffusionReasoning(nn.Module if nn else object):
     """HAG-OS Build 4.0: Recursive Diffusion Reasoning Engine."""
     def __init__(self, state_dim=128, num_steps=10):
         super().__init__()

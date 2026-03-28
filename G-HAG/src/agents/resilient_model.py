@@ -1,9 +1,13 @@
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
 from src.agents.lie_augmenter import LieAugmenter
 from src.agents.holographic_memory import HolographicLayer
 
-class ResilientHAGModel(nn.Module):
+class ResilientHAGModel(nn.Module if nn else object):
     """
     نموذج HAG المرن (Build 4.0 (Unified)) - GPU Ready.
     ResilientHAGModel: Combines Symmetry-Aware Feature Extraction (LieAugmenter)

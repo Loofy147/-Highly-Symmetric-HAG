@@ -1,6 +1,13 @@
-import torch
-import torch.nn as nn
-import numpy as np
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 class HolographicWeightEncoder:
     """
@@ -32,7 +39,7 @@ class HolographicWeightEncoder:
         damaged_h = self.simulate_erasure(h_weights, erasure_ratio)
         return self.decode(damaged_h)
 
-class HolographicLayer(nn.Module):
+class HolographicLayer(nn.Module if nn else object):
     """HAG-OS Build 4.0: Neural layer with holographic error-correction."""
     def __init__(self, input_dim, output_dim):
         super().__init__()

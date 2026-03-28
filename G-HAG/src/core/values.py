@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 import json
 import os
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 @dataclass
 class QScoreWeights:

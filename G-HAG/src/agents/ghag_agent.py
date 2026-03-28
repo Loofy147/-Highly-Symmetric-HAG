@@ -44,9 +44,26 @@ class GHAGSovereignAgent(NativelyRecursiveAgent):
         witness = self.vhse.retrieve(query_vec)
         has_cached_witness = torch.norm(witness) > 0.1 # Simplified check
 
-        # 2. Symmetry/Domain Analysis & Active Inference Surprise
+                # 2. Symmetry/Domain Analysis & Discrete Governance
         domain_analysis = self.math_engine.analyse_text(problem_desc)
         discrete_obstruction = domain_analysis["status"] == "PROVED_IMPOSSIBLE"
+
+        if discrete_obstruction:
+            print(f"HAG-4.0: Logic Tear detected! Task is arithmetically impossible in {domain_analysis['parsed']['G']}. Rejecting early.")
+            return {
+                "problem": problem_desc,
+                "domain": domain_analysis["parsed"]["G"],
+                "mathematical_status": "PROVED_IMPOSSIBLE",
+                "extraction_result": {"status": "rejected", "reason": "Discrete Governance Objection (Logic Tear)"},
+                "governance": {
+                    "delta": 1.0,
+                    "is_sovereign": False,
+                    "status": "DISCRETE_OBSTRUCTION_REJECTED",
+                    "discrete_obstruction_detected": True,
+                    "holographic_witness": False
+                },
+                "version": self.values.version
+            }
 
         # Calculate surprise (Free Energy) based on domain status
         state = torch.randn(1, self.vhse.dim).to(self.device)

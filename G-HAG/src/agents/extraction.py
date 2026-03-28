@@ -15,8 +15,9 @@ class GlobalExtractionEngine:
         self.symbolic_patterns = [
             (r"remainder when (.*?) is divided by (\d+)", "REMAINDER"),
             (r"solve (.*?) for (x|y|n)", "EQUATION"),
-            (r"commutator \[([A-Z]), ([A-Z])\]", "COMMUTATOR"),
+            (r"commutator \[\s*(.*?)\s*,\s*(.*?)\s*\]", "COMMUTATOR"),
             (r"parity of (.*?) in S_(\d+)", "PERMUTATION"),
+            (r"is (.*?) solvable in (.*?)", "SOLVABILITY"),
         ]
 
     def extract_and_solve(self, query: str, context: str) -> Dict[str, Any]:

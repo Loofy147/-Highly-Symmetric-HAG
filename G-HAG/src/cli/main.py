@@ -1,6 +1,13 @@
 import argparse
-import torch
-import numpy as np
+try:
+    import torch
+except ImportError:
+    torch = None
+    nn = None
+try:
+    import numpy as np
+except ImportError:
+    np = None
 from src.agents import NativelyRecursiveAgent, ResilientHAGModel, GeneralDataLoader
 from src.desktop.agent import HAGDesktopAgent
 from src.core.values import SystemValues
