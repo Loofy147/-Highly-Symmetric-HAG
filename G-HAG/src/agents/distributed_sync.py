@@ -13,6 +13,12 @@ class DistributedAgentNode:
         self.local_governor = KFNGGovernor(input_dim=dimension, threshold=0.984)
         self.local_identity = torch.sign(torch.randn(dimension))
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.peer_registry = {} # id -> identity_vector
+
+    def register_peer(self, peer_id: str, peer_identity: torch.Tensor):
+        """HAG-OS Build 4.0: Register a peer node in the local registry."""
+        self.peer_registry[peer_id] = peer_identity.to(self.device)
+        return {"status": "PEER_REGISTERED", "peer_id": peer_id}
 
     def broadcast_state(self, state_vector: torch.Tensor):
         """HAG-OS Build 4.0: Broadcast local state to the shared holographic bulk."""
@@ -21,8 +27,11 @@ class DistributedAgentNode:
         self.shared_bulk.store(self.local_identity, state_vector)
         return {"status": "BROADCAST_SUCCESS", "node_id": self.id}
 
-    def sync_collective_state(self, peer_identities: List[torch.Tensor]) -> torch.Tensor:
+    def sync_collective_state(self, peer_identities: Optional[List[torch.Tensor]] = None) -> torch.Tensor:
         """HAG-OS Build 4.0: Synchronize with collective state from peers."""
+        if peer_identities is None:
+            peer_identities = list(self.peer_registry.values())
+
         collective_sum = torch.zeros(self.dim).to(self.device)
         count = 0
         for peer_id_vec in peer_identities:
@@ -64,5 +73,6 @@ class DistributedAgentNode:
             "type": "Distributed Consciousness (DCE)",
             "version": "4.0.0-SOVEREIGN-DESKTOP",
             "sync_latency": "1.0ms (Target)",
-            "phase": "ER=EPR Approximated"
+            "phase": "ER=EPR Approximated",
+            "active_peers": len(self.peer_registry)
         }
