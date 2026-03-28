@@ -1,4 +1,8 @@
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
+    nn = None
 from typing import Dict, Any, List, Optional
 from src.agents.rlm import RecursiveLanguageModel
 from src.indexing.holographic_memory import VolumetricHolographicMemory

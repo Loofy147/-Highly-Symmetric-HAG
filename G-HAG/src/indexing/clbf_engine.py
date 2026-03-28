@@ -1,10 +1,21 @@
-import numpy as np
-import torch
-import torch.nn as nn
+try:
+    import numpy as np
+except ImportError:
+    np = None
+try:
+    import torch
+except ImportError:
+    torch = None
+    nn = None
+try:
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
 import json
 import os
 
-class LearnedStageModel(nn.Module):
+class LearnedStageModel(nn.Module if nn else object):
     def __init__(self, input_dim):
         super().__init__()
         self.net = nn.Sequential(

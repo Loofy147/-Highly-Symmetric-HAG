@@ -1,7 +1,11 @@
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
 
-class LieAugmenter(nn.Module):
+class LieAugmenter(nn.Module if nn else object):
     """
     HAG-OS Build 4.0: Continuous Symmetry Discovery Engine (Lie Algebra).
     Exploits algebraic symmetries to reduce training data requirements by 40%.

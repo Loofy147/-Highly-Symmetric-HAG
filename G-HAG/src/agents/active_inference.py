@@ -1,9 +1,16 @@
-import torch
-import torch.nn as nn
-import numpy as np
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
+try:
+    import numpy as np
+except ImportError:
+    np = None
 from typing import Dict, Any, List
 
-class WorldModel(nn.Module):
+class WorldModel(nn.Module if nn else object):
     """HAG-OS Build 4.0 World Model for predicting environmental state transitions."""
     def __init__(self, state_dim=128, action_dim=10):
         super().__init__()
@@ -16,7 +23,7 @@ class WorldModel(nn.Module):
     def forward(self, state, action):
         return self.transition(torch.cat([state, action], dim=-1))
 
-class FreeEnergyMinimizer(nn.Module):
+class FreeEnergyMinimizer(nn.Module if nn else object):
     """HAG-OS Build 4.0: Active Inference Engine."""
     def __init__(self, state_dim=128, action_dim=10):
         super().__init__()

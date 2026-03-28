@@ -1,6 +1,14 @@
 import pandas as pd
-import torch
-import numpy as np
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
+try:
+    import numpy as np
+except ImportError:
+    np = None
 import os
 import glob
 

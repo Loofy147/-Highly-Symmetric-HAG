@@ -1,4 +1,7 @@
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 class GovernorKernelEKRLS:
     def __init__(self, lambda_reg=0.1, sigma=1.0):

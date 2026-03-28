@@ -1,6 +1,12 @@
 import unittest
-import torch
-import numpy as np
+try:
+    import torch
+except ImportError:
+    torch = None
+try:
+    import numpy as np
+except ImportError:
+    np = None
 from src.agents.native_recursive import NativelyRecursiveAgent
 from src.agents.rlm import RecursiveLanguageModel
 from src.indexing.ribbon import RibbonIndexer

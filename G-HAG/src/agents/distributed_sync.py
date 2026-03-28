@@ -1,5 +1,9 @@
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:
+    torch = None
+    nn = None
 from src.indexing.holographic_memory import VolumetricHolographicMemory
 from src.governor.kfng_governor import KFNGGovernor
 from typing import Dict, Any, List, Optional

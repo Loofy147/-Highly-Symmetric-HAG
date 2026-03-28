@@ -1,5 +1,8 @@
 import re
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    np = None
 from typing import Dict, Any, List
 
 class RecursiveLanguageModel:

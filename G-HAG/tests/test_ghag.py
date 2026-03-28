@@ -1,8 +1,14 @@
 import unittest
 import sys
 import os
-import torch
-import numpy as np
+try:
+    import torch
+except ImportError:
+    torch = None
+try:
+    import numpy as np
+except ImportError:
+    np = None
 from src.agents.ghag_agent import GHAGSovereignAgent
 
 class TestGHAG(unittest.TestCase):
