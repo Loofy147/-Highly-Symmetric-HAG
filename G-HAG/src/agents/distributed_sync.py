@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from src.indexing.holographic_memory import VolumetricHolographicMemory
 from src.governor.kfng_governor import KFNGGovernor
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 class DistributedAgentNode:
     """HAG-OS Build 4.0: Distributed Consciousness Engine (DCE)."""
@@ -13,6 +13,28 @@ class DistributedAgentNode:
         self.local_governor = KFNGGovernor(input_dim=dimension, threshold=0.984)
         self.local_identity = torch.sign(torch.randn(dimension))
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    def broadcast_state(self, state_vector: torch.Tensor):
+        """HAG-OS Build 4.0: Broadcast local state to the shared holographic bulk."""
+        state_vector = state_vector.to(self.device)
+        # Use agent identity as key for stable anchoring
+        self.shared_bulk.store(self.local_identity, state_vector)
+        return {"status": "BROADCAST_SUCCESS", "node_id": self.id}
+
+    def sync_collective_state(self, peer_identities: List[torch.Tensor]) -> torch.Tensor:
+        """HAG-OS Build 4.0: Synchronize with collective state from peers."""
+        collective_sum = torch.zeros(self.dim).to(self.device)
+        count = 0
+        for peer_id_vec in peer_identities:
+            peer_id_vec = peer_id_vec.to(self.device)
+            peer_state = self.shared_bulk.retrieve(peer_id_vec)
+            if torch.norm(peer_state) > 0.1:
+                collective_sum += peer_state
+                count += 1
+
+        if count > 0:
+            return collective_sum / count
+        return torch.zeros(self.dim).to(self.device)
 
     def entangle_with_peer(self, peer_id: str, peer_skill_vector: torch.Tensor):
         peer_skill_vector = peer_skill_vector.to(self.device)

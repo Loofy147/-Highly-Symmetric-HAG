@@ -18,6 +18,14 @@ class RecursiveLanguageModel:
         results = self._recursive_reasoning(query, depth=0)
         return self._synthesize_final_answer(results)
 
+    def apply_suffix_smoothing(self, current_prediction: float, past_prediction: float, phi: float = 0.8) -> float:
+        """
+        Suffix Smoothing Recursion (Build 4.0).
+        Refines predictions by blending current and past probability estimates.
+        Formula: P(t|Sm) = phi * P(t|Sm) + (1-phi) * P(t|Sm-1)
+        """
+        return phi * current_prediction + (1.0 - phi) * past_prediction
+
     def _recursive_reasoning(self, sub_query: str, depth: int) -> List[Any]:
         """Agent self-call for recursive task decomposition."""
         if depth >= self.depth_limit:
