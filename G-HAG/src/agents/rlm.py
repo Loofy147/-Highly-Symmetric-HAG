@@ -11,6 +11,7 @@ class RecursiveLanguageModel:
         self.model_name = root_model_name
         self.depth_limit = depth_limit
         self.environment = {} # Python REPL environment for external state
+        self.reasoning_history = [] # For history blending
 
     def process(self, query: str, super_context: str):
         """Converts massive inputs to external objects and triggers recursion."""
@@ -23,11 +24,18 @@ class RecursiveLanguageModel:
         Suffix Smoothing Recursion (Build 4.0 Refinement).
         Refines predictions by blending current and past probability estimates.
         Formula: P(t|Sm) = phi(depth) * P(t|Sm) + (1-phi(depth)) * P(t|Sm-1)
-        We use depth to decay the influence of deeper, potentially more 'hallucinatory' recursions.
         """
         depth_decay = 0.9 ** depth # 10% decay per depth level
         effective_phi = phi * depth_decay
-        return effective_phi * current_prediction + (1.0 - effective_phi) * past_prediction
+        smoothed = effective_phi * current_prediction + (1.0 - effective_phi) * past_prediction
+
+        # HAG-OS Build 4.0: History Blending
+        self.reasoning_history.append(smoothed)
+        if len(self.reasoning_history) > 1:
+            history_weight = 0.1
+            smoothed = (1.0 - history_weight) * smoothed + history_weight * np.mean(self.reasoning_history[:-1])
+
+        return float(smoothed)
 
     def _recursive_reasoning(self, sub_query: str, depth: int) -> List[Any]:
         """Agent self-call for recursive task decomposition."""
@@ -60,5 +68,6 @@ class RecursiveLanguageModel:
             "version": "4.0.0-SOVEREIGN-DESKTOP",
             "retrieval_accuracy": "62% (RLM Protocol)",
             "token_efficiency": "3.0x (Target)",
-            "context_capacity": "10M+ Tokens"
+            "context_capacity": "10M+ Tokens",
+            "history_depth": len(self.reasoning_history)
         }

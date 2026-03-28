@@ -28,21 +28,30 @@ class DistributedAgentNode:
         return {"status": "BROADCAST_SUCCESS", "node_id": self.id}
 
     def sync_collective_state(self, peer_identities: Optional[List[torch.Tensor]] = None) -> torch.Tensor:
-        """HAG-OS Build 4.0: Synchronize with collective state from peers."""
+        """
+        HAG-OS Build 4.0 Refinement: Coherence-Weighted Aggregation.
+        Synchronizes with collective state from peers, weighting by coherence.
+        """
         if peer_identities is None:
             peer_identities = list(self.peer_registry.values())
 
         collective_sum = torch.zeros(self.dim).to(self.device)
-        count = 0
+        total_weight = 0.0
+
         for peer_id_vec in peer_identities:
             peer_id_vec = peer_id_vec.to(self.device)
             peer_state = self.shared_bulk.retrieve(peer_id_vec)
             if torch.norm(peer_state) > 0.1:
-                collective_sum += peer_state
-                count += 1
+                # Score the peer's contribution using local governor's verify_entanglement
+                # This ensures we trust coherent "consciousness" more
+                is_coherent = self.local_governor.verify_entanglement(peer_state)
+                weight = 1.0 if is_coherent else 0.1
 
-        if count > 0:
-            return collective_sum / count
+                collective_sum += weight * peer_state
+                total_weight += weight
+
+        if total_weight > 0:
+            return collective_sum / total_weight
         return torch.zeros(self.dim).to(self.device)
 
     def entangle_with_peer(self, peer_id: str, peer_skill_vector: torch.Tensor):
