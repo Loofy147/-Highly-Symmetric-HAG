@@ -31,6 +31,9 @@ DOMAIN_REGISTRY = {
     "icosahedral": {"m": 2, "k": 3, "G": "2I (Binary Icosahedral Group)", "Q": "I (Icosahedral Group)", "SES": "0 -> Z_2 -> 2I -> I -> 0"},
     "crystal": {"m": 4, "k": 4, "G": "Fd3m (Diamond Space Group)", "Q": "T (Tetrahedral Group)", "SES": "0 -> C3v -> Fd3m -> T -> 0"},
     "diamond": {"m": 4, "k": 4, "G": "Fd3m (Diamond Space Group)", "Q": "T (Tetrahedral Group)", "SES": "0 -> C3v -> Fd3m -> T -> 0"},
+    "heisenberg": {"m": 6, "k": 3, "G": "H3(Z_6)", "Q": "Z_6^2", "SES": "0 -> Z_6 -> H3(Z_6) -> Z_6^2 -> 0"},
+    "magic": {"m": 2, "k": 3, "G": "M_n", "Q": "Z_n", "SES": "0 -> Z_n -> M_n -> Z_n -> 0"},
+    "s3": {"m": 2, "k": 3, "G": "S_3 (Permutation Group)", "Q": "Z_2", "SES": "0 -> A_3 -> S_3 -> Z_2 -> 0"},
     "hamming": {"m": 2, "k": 7, "G": "Z2^7", "Q": "Z2^3", "SES": "0 -> C -> Z2^7 -> Z2^3 -> 0"}
 }
 
@@ -44,25 +47,37 @@ class NonAbelianSubgroup:
         # k odd, m even -> blocked.
         return (k % 2 == 1) and (self.Q % 2 == 0)
 
-def analyze_advanced_domain(domain: str) -> Dict:
-    """Advanced classification for icosahedral and crystal geometries."""
-    data = DOMAIN_REGISTRY.get(domain.lower())
+def analyze_advanced_domain(domain_desc: str) -> Dict:
+    """Advanced classification for icosahedral, crystal, heisenberg, and more."""
+    data = None
+    domain_name = ""
+    for name, d_data in DOMAIN_REGISTRY.items():
+        if name in domain_desc.lower():
+            data = d_data
+            domain_name = name
+            break
+
     if not data: return {"exists": "UNKNOWN"}
     m, k = data["m"], data["k"]
-    if domain.lower() == "hamming":
+    if domain_name == "hamming":
         return {"m": m, "k": k, "G": data["G"], "exists": "PROVED_POSSIBLE", "theorem_id": "12.1", "proof": ["1. Hamming code C is normal in Z2^7.", "2. Quotient is Z2^3.", "3. Perfect covering OS exact."]}
 
-    # icosahedral 2I is order 120, SES 0 -> Z2 -> 2I -> I -> 0
-    # Quotient is I (icosahedral group, order 60). No, parity of k is 3.
-    # Actually Q=60 is even, so for k=3 it might be obstructed.
-    nas = NonAbelianSubgroup(120 if domain.lower()=="icosahedral" else 1, 2 if domain.lower()=="icosahedral" else 1)
-    h2 = nas.parity_law(k) if domain.lower()=="icosahedral" else False
-
-    if domain.lower() == "crystal" or domain.lower() == "diamond":
-        # m=4, k=4 (already verified as PROVED_POSSIBLE in theorems.py)
+    if domain_name == "crystal" or domain_name == "diamond":
         return {"m": 4, "k": 4, "G": data["G"], "exists": "PROVED_POSSIBLE", "theorem_id": "9.1", "proof": ["1. γ₂ vanishes for even k.", "2. m=4 k=4 solution discovered by SA."]}
 
-    return {"m": m, "k": k, "G": data["G"], "exists": "PROVED_IMPOSSIBLE" if h2 else "OPEN", "theorem_id": "6.1" if h2 else "ADV-1", "proof": [f"1. SES: {data['SES']}.", f"2. Quotient order {nas.Q}.", f"3. {'Parity γ₂ blocks.' if h2 else 'γ₂ vanishes.'}"]}
+    # Determine Group and Subgroup orders for parity law
+    g_order, h_order = 1, 1
+    if domain_name == "icosahedral": g_order, h_order = 120, 2
+    elif domain_name == "heisenberg": g_order, h_order = m**3, m
+    elif domain_name == "magic": g_order, h_order = 4, 2
+    elif domain_name == "s3": g_order, h_order = 6, 3
+
+    nas = NonAbelianSubgroup(g_order, h_order)
+    h2 = nas.parity_law(k)
+
+    return {"m": m, "k": k, "G": data["G"], "exists": "PROVED_IMPOSSIBLE" if h2 else "OPEN",
+            "theorem_id": "6.1" if h2 else "ADV-1",
+            "proof": [f"1. SES: {data['SES']}.", f"2. Quotient order {nas.Q}.", f"3. {'Parity γ₂ blocks.' if h2 else 'γ₂ vanishes.'}"]}
 
 def get_algebraic_proof(m: int, k: int) -> Dict:
     return AlgebraicClassifier(m, k).analyze()
@@ -87,6 +102,7 @@ if __name__ == "__main__":
     print(analyze_advanced_domain("icosahedral"))
     print(get_heisenberg_proof(3, 3))
     print(get_heisenberg_proof(6, 3))
+    print(analyze_advanced_domain("heisenberg"))
 
 def parse_domain(desc: str) -> Dict[str, Any]:
     """Parses a domain description or returns a default."""

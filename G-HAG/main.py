@@ -1,40 +1,45 @@
 import sys
 import os
+import torch
 from src.agents.ghag_agent import GHAGSovereignAgent
 
 def main():
     print("====================================================")
-    print("   G-HAG Build 1.0 — Sovereign Mathematical Agent   ")
+    print("   G-HAG Build 4.0 — Sovereign Mathematical Agent   ")
+    print("   Integrated RSI | VHSE | RIBB | Active Inference  ")
     print("====================================================")
 
     # 1. Initialize GHAG Sovereign Agent
     agent = GHAGSovereignAgent()
 
-    # 2. Feed Mathematical Task into HAG Sovereignty Loop
-    # Description includes mathematical domain + AIMO extraction challenge
-    problem_desc = "Find the remainder when 3**20 is divided by 100 in the Icosahedral domain."
+    # 2. Test 1: Heisenberg Commutator (Symbolic Expansion)
+    problem_desc1 = "Evaluate the commutator [P, Q] in the Heisenberg domain."
+    print(f"\n[TASK 1] Heisenberg Commutator Extraction...")
+    res1 = agent.solve_math_with_governance(problem_desc1, "")
+    print(f"  Result: {res1['extraction_result']['result']}")
+    print(f"  Domain: {res1['domain']} (Status: {res1['mathematical_status']})")
 
-    # Large context for RLM-N peeking if symbolic fails (which 3**20 might if we didn't have sympify)
-    super_context = "Historical data for Icosahedral symmetry: SES is 0 -> Z2 -> 2I -> I -> 0. "                     "Critical pattern: 3**20 % 100 is 1. "                     "Sovereignty condition: delta must be > 0.001."
+    # 3. Test 2: Semantic Holographic Retrieval (Proof Anchoring)
+    # Solve a possible problem to anchor the witness
+    problem_desc2 = "Solve x**2 = 16 for x in the crystal domain."
+    print(f"\n[TASK 2a] Crystal solving & Proof Anchoring...")
+    agent.solve_math_with_governance(problem_desc2, "")
 
-    print(f"\n[FEED-TOGETHER] Feeding problem into GHAG Loop...")
-    res = agent.solve_math_with_governance(problem_desc, super_context)
+    # Solve again to retrieve the witness
+    print(f"\n[TASK 2b] Semantic Retrieval (Holographic Match)...")
+    res2 = agent.solve_math_with_governance(problem_desc2, "")
+    print(f"  Holographic Witness Found: {res2['governance']['holographic_witness']}")
+    print(f"  Governance Status: {res2['governance']['status']}")
 
-    # 3. Output results with mathematical and governance verification
-    print("\n[RESULT] Unified Intelligence Output:")
-    print(f"  Problem:  {res['problem']}")
-    print(f"  Domain:   {res['domain']}")
-    print(f"  Math:     {res['mathematical_status']}")
-    print(f"  Extract:  {res['extraction_result']['method']} (Result: {res['extraction_result']['result']})")
-    print(f"  Gov:      Delta={res['governance']['delta']:.4f} ({res['governance']['status']})")
+    # 4. Test 3: Active Inference Depth Elevation (Surprise)
+    # Icosahedral is PROVED_IMPOSSIBLE, triggering "surprise" and depth elevation
+    problem_desc3 = "Find the parity of (123) in S_3 in the Icosahedral domain."
+    print(f"\n[TASK 3] Icosahedral Surprise (Depth Elevation)...")
+    res3 = agent.solve_math_with_governance(problem_desc3, "Large context...")
+    print(f"  Math Status: {res3['mathematical_status']}")
+    print(f"  Current RLM Depth: {agent.extraction_engine.rlm.depth_limit}")
 
-    # 4. Feedback Loop: Use Math to parameterize HAG stability
-    print(f"\n[FEEDBACK] Math engine status '{res['mathematical_status']}' fed back to HAG values...")
-    if res['mathematical_status'] == "PROVED_IMPOSSIBLE":
-        agent.values.task_accuracy_target = 0.99
-        print(f"  High-confidence result detected! Accuracy target elevated to {agent.values.task_accuracy_target}.")
-
-    print("\n--- G-HAG Execution Complete ---")
+    print("\n--- G-HAG Build 4.0 Execution Complete ---")
 
 if __name__ == "__main__":
     main()
